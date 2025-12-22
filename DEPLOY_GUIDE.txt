@@ -1,0 +1,17 @@
+YiShou 工具 Netlify 部署包（含 Netlify Functions 代理）
+
+檔案結構：
+- index.html
+- netlify.toml
+- package.json
+- netlify/functions/proxy.js
+- DEPLOY_GUIDE.txt（本檔）
+
+部署（建議用 GitHub 匯入 Netlify，Functions 才會自動安裝依賴）：
+1) 把整個資料夾推到 GitHub（或用 Netlify CLI 部署）。
+2) Netlify → Add new site → Import an existing project → 選 GitHub repo
+3) Build command：留空
+4) Publish directory：.
+5) Deploy site
+
+部署完成後，打開網站，工具會自動使用 /.netlify/functions/proxy 作為代理。
