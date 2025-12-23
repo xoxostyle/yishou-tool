@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YiShou API 商品抓取工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .cors-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        .cors-notice strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .cors-notice ol {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+        
+        .cors-notice li {
+            margin: 5px 0;
+        }
+        
+        .cors-notice code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            font-family: monospace;
+            min-height: 100px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .log-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .log-output .info { color: #4fc3f7; }
+        .log-output .warn { color: #ffa726; }
+        .log-output .error { color: #ef5350; }
+        .log-output .success { color: #66bb6a; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .results-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .results-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .results-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .file-upload {
+            border: 2px dashed #667eea;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload:hover {
+            background: #f5f5ff;
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .table-container {
+            max-height: 500px;
+            overflow: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ YiShou API 商品抓取工具</h1>
+            <p>一手 App 商品數據抓取與分析系統 - SKU 詳情版</p>
+        </div>
+        
+        <div class="cors-notice">
+            <strong>🌐 部署說明：</strong>
+            <ol>
+                <li><strong>Netlify 部署（推薦）：</strong>自動使用內建代理，無需額外配置</li>
+                <li><strong>本地開發：</strong>需要啟用 CORS 瀏覽器擴展，或運行本地代理服務器</li>
+                <li><strong>自定義代理：</strong>在配置中填入你的代理服務器地址</li>
+            </ol>
+            <p style="margin-top: 10px; font-size: 12px; color: #856404;">
+                💡 當前模式: <strong id="proxyMode">檢測中...</strong>
+            </p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('config')">配置</button>
+                <button class="tab" onclick="switchTab('fetch')">抓取</button>
+                <button class="tab" onclick="switchTab('results')">結果</button>
+            </div>
+            
+            <div id="config-tab" class="tab-content active">
+                <div class="section">
+                    <div class="section-title">基本配置</div>
+                    <div class="form-group">
+                        <label>起始日期 (YYYYMMDD)</label>
+                        <input type="text" id="startDate" value="20251115" placeholder="20251115">
+                    </div>
+                    <div class="form-group">
+                        <label>結束日期 (YYYYMMDD)（可留空，留空則預設今日）</label>
+                        <input type="text" id="endDate" value="" placeholder="20251220">
+                    </div>
+                    <div class="form-group">
+                        <label>指定商品ID（可留空）</label>
+                        <input type="text" id="goodsIdFilter" value="" placeholder="例如 123456 或 123456,789012">
+                    </div>
+                    <div class="form-group">
+                        <label>Token</label>
+                        <input type="text" id="token" value="8bfdd76c4f34df852be8c763dbbffd4a">
+                    </div>
+                    <div class="form-group">
+                        <label>UDID</label>
+                        <input type="text" id="udid" value="7DBD18AA-1C43-44F8-8754-04D5D3DDDEF5">
+                    </div>
+                    <div class="form-group">
+                        <label>UID</label>
+                        <input type="text" id="uid" value="19037923">
+                    </div>
+                    <div class="form-group">
+                        <label>代理服務器 (選填)</label>
+                        <input type="text" id="proxyUrl" placeholder="留空則自動使用 Netlify Functions" value="">
+                        <p style="font-size: 12px; color: #888; margin-top: 5px;">
+                            在 Netlify 上會自動使用內建代理，本地開發時可填入本地代理地址
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">供應商列表</div>
+                    <div class="form-group">
+                        <label>Supplier IDs (每行一個)</label>
+                        <textarea id="supplierIds" placeholder="14949&#10;15234&#10;16789">39222</textarea>
+                    </div>
+                    <p style="font-size: 13px; color: #888; margin-top: 5px;">或上傳 SHOP.xls 文件：</p>
+                    <div class="file-upload" onclick="document.getElementById('shopFile').click()">
+                        <input type="file" id="shopFile" accept=".xls,.xlsx" onchange="handleFileUpload(event)">
+                        <p>📁 點擊上傳 Excel 文件</p>
+                        <p style="font-size: 12px; color: #888; margin-top: 5px;">支持 .xls / .xlsx</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="fetch-tab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">抓取選項</div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="fetchDetails" checked>
+                            抓取商品詳情 (SKU/顏色/尺寸/詳情圖)
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>每頁商品數</label>
+                        <input type="number" id="pageSize" value="20" min="10" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>請求延遲 (毫秒)</label>
+                        <input type="number" id="requestDelay" value="500" min="0" max="5000">
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <button class="btn btn-primary" onclick="startFetch()" id="fetchBtn">
+                        🚀 開始抓取
+                    </button>
+                    <button class="btn btn-secondary" onclick="stopFetch()" id="stopBtn" disabled>
+                        ⏹️ 停止
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearLog()">
+                        🗑️ 清除日誌
+                    </button>
+                </div>
+                
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">執行日誌</div>
+                    <div class="log-output" id="logOutput"></div>
+                </div>
+            </div>
+            
+            <div id="results-tab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">統計數據</div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalGoods">0</div>
+                            <div class="stat-label">總商品數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="filteredGoods">0</div>
+                            <div class="stat-label">符合條件商品</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalSkus">0</div>
+                            <div class="stat-label">總 SKU 數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="successDetails">0</div>
+                            <div class="stat-label">詳情成功</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">商品數據預覽</div>
+                    <button class="btn btn-primary" onclick="downloadCSV()">
+                        💾 下載 CSV
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadJSON()">
+                        📄 下載 JSON
+                    </button>
+                    <div class="table-container">
+                        <table class="results-table" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th>供應商</th>
+                                    <th>品牌</th>
+                                    <th>商品ID</th>
+                                    <th>商品名稱</th>
+                                    <th>貨號</th>
+                                    <th>SKU</th>
+                                    <th>顏色</th>
+                                    <th>尺寸</th>
+                                    <th>價格</th>
+                                    <th>上新日期</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let fetchedData = [];
+        let isRunning = false;
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        function log(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString('zh-TW');
+            const className = type;
+            logOutput.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('logOutput').innerHTML = '';
+        }
+        
+        function updateProgress(current, total) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.style.display = 'block';
+            const percent = (current / total) * 100;
+            progressFill.style.width = percent + '%';
+        }
+        
+        function updateStats() {
+            const startDate = (document.getElementById('startDate').value || '').trim();
+            let endDate = (document.getElementById('endDate').value || '').trim();
+            const goodsIdFilterRaw = (document.getElementById('goodsIdFilter')?.value || '').trim();
+
+            if (!goodsIdFilterRaw && !startDate) {
+                log('✗ 請輸入起始日期 (YYYYMMDD)', 'error');
+                isRunning = false;
+                document.getElementById('fetchBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                return;
+            }
+
+            // 若只填起始日期，結束日期預設為今日（YYYYMMDD）
+            if (!goodsIdFilterRaw && startDate && !endDate) {
+                endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const endDateEl = document.getElementById('endDate');
+                if (endDateEl) endDateEl.value = endDate;
+            }
+
+            let goodsIdSet = null;
+                        let remainingGoodsIdSet = null;
+            if (goodsIdFilterRaw) {
+                const ids = goodsIdFilterRaw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+                goodsIdSet = new Set(ids);
+                            remainingGoodsIdSet = new Set(goodsIdSet);
+            }
+
+                        // 本工具輸出需要 SKU/顏色/尺寸，且需套用 stock > 1 過濾，因此必須抓取詳情
+                        if (!fetchDetails) {
+                            log('⚠️ 未勾選「抓取詳情」將無法取得 SKU/顏色/尺寸/庫存（也無法套用 stock > 1 過濾），已自動啟用抓取詳情', 'warn');
+                            fetchDetails = true;
+                            const fdEl = document.getElementById('fetchDetails');
+                            if (fdEl) fdEl.checked = true;
+                        }
+            const filtered = fetchedData.filter(g => g.first_sale_time >= startDate);
+            const totalSkus = filtered.length;
+            const uniqueGoods = new Set(filtered.map(g => g.goods_id)).size;
+            const withDetails = filtered.filter(g => g.sku).length;
+            
+            document.getElementById('totalGoods').textContent = uniqueGoods;
+            document.getElementById('filteredGoods').textContent = uniqueGoods;
+            document.getElementById('totalSkus').textContent = totalSkus;
+            document.getElementById('successDetails').textContent = withDetails;
+        }
+        
+        function updateResultsTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+            
+            const startDate = (document.getElementById('startDate').value || '').trim();
+            let endDate = (document.getElementById('endDate').value || '').trim();
+            const goodsIdFilterRaw = (document.getElementById('goodsIdFilter')?.value || '').trim();
+
+            if (startDate && !endDate) {
+                endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            }
+
+            let goodsIdSet = null;
+                        let remainingGoodsIdSet = null;
+            if (goodsIdFilterRaw) {
+                const ids = goodsIdFilterRaw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+                goodsIdSet = new Set(ids);
+                            remainingGoodsIdSet = new Set(goodsIdSet);
+            }
+
+            const filtered = fetchedData.filter(g => {
+                const t = String(g.first_sale_time || '');
+                if (!t) return false;
+                if (startDate && t < startDate) return false;
+                if (endDate && t > endDate) return false;
+
+                const sku = (g.sku || '').toString().trim();
+                if (!sku) return false;
+
+                const st = Number(g.stock ?? 0);
+                if (!(st > 1)) return false;
+                        return true;
+            });
+            
+            filtered.slice(0, 200).forEach(item => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = item.provider_name || '';
+                row.insertCell(1).textContent = item.brand_name || '';
+                row.insertCell(2).textContent = item.goods_id || '';
+                row.insertCell(3).textContent = item.goods_name || '';
+                row.insertCell(4).textContent = item.code || '';
+                row.insertCell(5).textContent = item.sku || '';
+                row.insertCell(6).textContent = item.color || '';
+                row.insertCell(7).textContent = item.size || '';
+                row.insertCell(8).textContent = item.price || '';
+                row.insertCell(9).textContent = item.first_sale_time || '';
+            });
+            
+            if (filtered.length > 200) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 10;
+                cell.style.textAlign = 'center';
+                cell.style.color = '#888';
+                cell.textContent = `...還有 ${filtered.length - 200} 筆數據，請下載完整文件查看`;
+            }
+        }
+        
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            log(`正在讀取文件: ${file.name}`, 'info');
+            
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                const supplierIds = jsonData.map(row => {
+                    return row.supplier_id || row.supply_id || row.id || row.supplierid || Object.values(row)[0];
+                }).filter(id => id).map(id => String(id).trim());
+                
+                const uniqueIds = [...new Set(supplierIds)];
+                document.getElementById('supplierIds').value = uniqueIds.join('\n');
+                
+                log(`✓ 成功讀取 ${uniqueIds.length} 個供應商ID`, 'success');
+            } catch (error) {
+                log(`✗ 文件讀取失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // 自動偵測是否在 Netlify 上運行
+        function getProxyUrl() {
+            const customProxy = document.getElementById('proxyUrl').value.trim();
+            if (customProxy) return customProxy;
+            
+            // 如果在 Netlify 上，使用內建的 Functions
+            if (window.location.hostname.includes('netlify.app') || 
+                window.location.hostname.includes('netlify.com')) {
+                return '/.netlify/functions/proxy';
+            }
+            
+            return null;
+        }
+        
+        async function fetchWithProxy(url, options) {
+            const proxyUrl = getProxyUrl();
+            
+            // 使用 Netlify Functions 或自定義代理
+            if (proxyUrl) {
+                try {
+                    const proxyPayload = {
+                        url: url,
+                        method: options.method || 'POST',
+                        body: options.body,
+                        requestHeaders: options.headers || {}
+                    };
+                    
+                    const response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(proxyPayload)
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || `HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // 模擬標準 Response 對象
+                    return {
+                        ok: true,
+                        status: response.status,
+                        json: async () => data,
+                        text: async () => JSON.stringify(data)
+                    };
+
+                    if (goodsIdSet && remainingGoodsIdSet && remainingGoodsIdSet.size === 0) {
+                        log('🎉 已完成所有指定商品ID，停止後續供應商抓取', 'success');
+                        break;
+                    }
+
+                } catch (error) {
+                    log(`  代理請求失敗: ${error.message}`, 'error');
+                    throw error;
+                }
+            }
+            
+            // 無代理時的錯誤提示
+            throw new Error('需要代理服務器：請在配置中填入代理 URL，或啟用 CORS 瀏覽器擴展');
+        }
+        
+        async function fetchGoodsList(supplierId, token, udid, uid, remainingGoodsIdSet) {
+            const url = 'https://api.yishouapp.com/Supplier/supplier_detail_by_supplier_id';
+            let allGoods = [];
+            let page = 1;
+            const delay = parseInt(document.getElementById('requestDelay').value) || 500;
+            
+            while (isRunning) {
+                const body = new URLSearchParams({
+                    app_code: '0',
+                    goods_type: '0',
+                    is_best: '0',
+                    model: 'iPhone 14 Pro',
+                    page: page.toString(),
+                    plat_type: 'iOS',
+                    sort: '0',
+                    supplier_id: supplierId,
+                    t_t: Math.floor(Date.now() / 1000).toString(),
+                    token: token,
+                    udid: udid,
+                    uid: uid,
+                    version: '26.100000',
+                    version_name: '7.64.01'
+                });
+                
+                try {
+                    const response = await fetchWithProxy(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'YiShou/7.64.01 (iPhone; iOS 26.1; Scale/3.00)'
+                        },
+                        body: body.toString()
+                    });
+                    
+                    if (!response.ok) {
+                        log(`✗ 供應商 ${supplierId} 第 ${page} 頁請求失敗: HTTP ${response.status}`, 'error');
+                        break;
+                    }
+                    
+                    const data = await response.json();
+                    const goods = data?.data?.goods || [];
+                    
+                    if (!goods || goods.length === 0) break;
+                    
+                    if (remainingGoodsIdSet && remainingGoodsIdSet.size > 0) {
+                        const matched = goods.filter(g => {
+                            const id = String(g.goods_id || g.goodsId || '');
+                            return id && remainingGoodsIdSet.has(id);
+                        });
+                        matched.forEach(g => {
+                            const id = String(g.goods_id || g.goodsId || '');
+                            if (id) remainingGoodsIdSet.delete(id);
+                        });
+                        allGoods.push(...matched);
+                        log(`  第 ${page} 頁: ${goods.length} 個商品，命中指定ID: ${matched.length}，累計命中 ${allGoods.length}，剩餘ID ${remainingGoodsIdSet.size}`, 'info');
+                        if (remainingGoodsIdSet.size === 0) {
+                            log('  已找到所有指定商品ID，停止翻頁', 'info');
+                            break;
+                        }
+                    } else {
+                        allGoods.push(...goods);
+                        log(`  第 ${page} 頁: ${goods.length} 個商品，累計 ${allGoods.length}`, 'info');
+                    }
+
+                    page++;
+                    if (page > 50) {
+                        log('  達到最大頁數限制(50)，停止', 'warn');
+                        break;
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } catch (error) {
+                    log(`✗ 供應商 ${supplierId} 請求錯誤: ${error.message}`, 'error');
+                    break;
+                }
+            }
+            
+            return allGoods;
+        }
+        
+        async function fetchGoodsDetail(goodsId, stallId, token, udid, uid) {
+            const url = 'https://api.yishouapp.com/goods/get_goods_info_ext';
+            
+            const body = new URLSearchParams({
+                activityId: '',
+                app_code: '0',
+                campaign_event_id: '',
+                campaign_h5_banner_id: '',
+                category_banner_name: '',
+                category_source: '',
+                event_id: `${uid}_${Math.floor(Date.now() / 1000)}`,
+                footprint: '0',
+                good_index: '1',
+                goods_id: goodsId.toString(),
+                goods_no: '',
+                goods_seat_id: '',
+                is_default: '0',
+                is_operat: '',
+                keyword: '',
+                landing_event_id: `${uid}_${Math.floor(Date.now() / 1000)}`,
+                model: 'iPhone 14 Pro',
+                origin_name: '',
+                plat_type: 'iOS',
+                position: '',
+                push_id: '',
+                source: '11',
+                sources: '11',
+                ss_type: '0',
+                stall_id: stallId.toString(),
+                stall_name: '',
+                stall_source: '1',
+                t_t: Math.floor(Date.now() / 1000).toString(),
+                tab_name: '上新',
+                token: token,
+                two_level_source: '2',
+                udid: udid,
+                uid: uid,
+                version: '26.100000',
+                version_name: '7.64.01'
+            });
+            
+            try {
+                const response = await fetchWithProxy(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'User-Agent': 'YiShou/7.64.01 (iPhone; iOS 26.1; Scale/3.00)'
+                    },
+                    body: body.toString()
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const detail = data?.data || {};
+                
+                const variants = [];
+                const attrList = detail.attribute || detail.attributes || [];
+                
+                if (Array.isArray(attrList)) {
+                    for (const attr of attrList) {
+                        const color = attr.color || attr.color_name || '';
+                        const items = attr.item || attr.items || [];
+                        
+                        for (const item of items) {
+                            const stockNum = Number(item.stock ?? item.sale_stock ?? item.num ?? 0);
+                            // 僅保留庫存 > 1 的 SKU
+                            if (!(stockNum > 1)) continue;
+
+                            variants.push({
+                                sku: item.sku || item.sku_code || '',
+                                color: color,
+                                size: item.size || item.size_name || '',
+                                price: item.price || item.shop_price || '',
+                                stock: stockNum
+                            });
+                        }
+                    }
+                }
+                
+                return variants;
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        async function startFetch() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            fetchedData = [];
+            document.getElementById('fetchBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            clearLog();
+            
+            const supplierIdsText = document.getElementById('supplierIds').value;
+            const supplierIds = supplierIdsText.split('\n').map(s => s.trim()).filter(s => s);
+            
+            if (supplierIds.length === 0) {
+                log('✗ 請輸入供應商ID或上傳文件', 'error');
+                isRunning = false;
+                document.getElementById('fetchBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                return;
+            }
+            
+            const token = document.getElementById('token').value;
+            const udid = document.getElementById('udid').value;
+            const uid = document.getElementById('uid').value;
+                        const startDate = (document.getElementById('startDate').value || '').trim();
+                        let fetchDetails = document.getElementById('fetchDetails').checked;
+                        const delay = parseInt(document.getElementById('requestDelay').value) || 500;
+                        const goodsIdFilterRaw = (document.getElementById('goodsIdFilter')?.value || '').trim();
+                        let endDate = (document.getElementById('endDate').value || '').trim();
+
+                        if (!goodsIdFilterRaw && !/^\d{8}$/.test(startDate)) {
+                            log('✗ 請輸入起始日期 (YYYYMMDD)', 'error');
+                            isRunning = false;
+                            document.getElementById('fetchBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            return;
+                        }
+
+                        // 若只填起始日期，結束日期預設為今日（YYYYMMDD）
+                        if (!goodsIdFilterRaw && startDate && !endDate) {
+                            endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                            const endDateEl = document.getElementById('endDate');
+                            if (endDateEl) endDateEl.value = endDate;
+                        }
+
+                        if (endDate && !/^\d{8}$/.test(endDate)) {
+                            log('✗ 結束日期格式錯誤，請輸入 YYYYMMDD（或留空自動帶入今日）', 'error');
+                            isRunning = false;
+                            document.getElementById('fetchBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            return;
+                        }
+
+                        if (endDate && endDate < startDate) {
+                            log('✗ 結束日期不可早於起始日期', 'error');
+                            isRunning = false;
+                            document.getElementById('fetchBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            return;
+                        }
+
+                        let goodsIdSet = null;
+                        let remainingGoodsIdSet = null;
+                        if (goodsIdFilterRaw) {
+                            const ids = goodsIdFilterRaw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+                            goodsIdSet = new Set(ids);
+                            remainingGoodsIdSet = new Set(goodsIdSet);
+                        }
+
+                        log(`🚀 開始抓取 ${supplierIds.length} 個供應商的商品數據`, 'info');
+                        if (goodsIdSet) {
+                        log('🎯 已指定商品ID：將忽略日期條件', 'warn');
+                        } else {
+                        log(`📅 起始日期: ${startDate}`,'info');
+                        }
+                        if (!goodsIdSet) log(`📅 結束日期: ${endDate}`,'info');
+                        if (goodsIdSet) log(`🎯 指定商品ID: ${Array.from(goodsIdSet).join(', ')}`,'info');
+                        log(`🔍 抓取詳情: ${fetchDetails ? '是' : '否'}`, 'info');
+            
+            for (let i = 0; i < supplierIds.length && isRunning; i++) {
+                const supplierId = supplierIds[i];
+                log(`\n[${i+1}/${supplierIds.length}] 正在處理供應商: ${supplierId}`, 'info');
+                
+                try {
+                    const goods = await fetchGoodsList(supplierId, token, udid, uid, remainingGoodsIdSet);
+                    let filtered;
+                    if (goodsIdSet) {
+                        filtered = goods;
+                    } else {
+                        filtered = goods.filter(g => {
+                        const t = String(g.first_sale_time || '');
+                        if (!t) return false;
+                        if (t < startDate) return false;
+                        if (endDate && t > endDate) return false;
+
+                        if (goodsIdSet) {
+                            const gid = String(g.goods_id || g.goodsId || '');
+                            return goodsIdSet.has(gid);
+                        }
+                        return true;
+                    });
+                    }
+                    
+                    if (goodsIdSet) {
+                        log(`  找到命中商品: ${filtered.length}（忽略日期條件）`, 'info');
+                    } else {
+                        log(`  找到 ${goods.length} 個商品，符合日期條件: ${filtered.length}`, 'info');
+                    }
+                    
+                    if (fetchDetails) {
+                        for (let j = 0; j < filtered.length && isRunning; j++) {
+                            const g = filtered[j];
+                            const goodsId = g.goods_id || g.goodsId;
+                            const stallId = g.stall_id || g.stallId || supplierId;
+                            
+                            try {
+                                const variants = await fetchGoodsDetail(goodsId, stallId, token, udid, uid);
+                                
+                                if (variants && variants.length > 0) {
+                                    for (const v of variants) {
+                                        fetchedData.push({
+                                            provider_name: g.supplier_name || '',
+                                            brand_name: g.brand_name || '',
+                                            first_sale_time: g.first_sale_time || '',
+                                            goods_id: goodsId,
+                                            goods_name: g.goods_name || '',
+                                            code: g.goods_no || '',
+                                            goods_img: g.goods_img || '',
+                                            price: v.price || g.shop_price || '',
+                                            sku: v.sku || '',
+                                            color: v.color || '',
+                                            size: v.size || '',
+                                            stock: v.stock ?? 0,
+                                            imgs: ''
+                                        });
+                                    }
+                                    log(`    商品 ${goodsId}: ${variants.length} 個SKU`, 'success');
+                                } else {
+                                    log(`    商品 ${goodsId}: 無 SKU、庫存 ≤ 1 或無法取得（已跳過）`, 'warn');
+                                }
+                                
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                            } catch (error) {
+                                log(`    商品 ${goodsId} 詳情失敗: ${error.message}`, 'error');
+                                fetchedData.push({
+                                    provider_name: g.supplier_name || '',
+                                    brand_name: g.brand_name || '',
+                                    first_sale_time: g.first_sale_time || '',
+                                    goods_id: goodsId,
+                                    goods_name: g.goods_name || '',
+                                    code: g.goods_no || '',
+                                    goods_img: g.goods_img || '',
+                                    price: g.shop_price || '',
+                                    sku: '',
+                                    color: '',
+                                    size: '',
+                                    imgs: ''
+                                });
+                            }
+                        }
+                    } else {
+                        log('⚠️ 未勾選「抓取詳情」會導致結果缺少 SKU/顏色/尺寸，且無法套用 stock > 1 過濾；請勾選後再抓取。', 'warn');
+                    }
+                    
+                    updateProgress(i + 1, supplierIds.length);
+                } catch (error) {
+                    log(`✗ 供應商 ${supplierId} 處理失敗: ${error.message}`, 'error');
+                }
+            }
+            
+            if (isRunning) {
+                log(`\n✓ 抓取完成！總計 ${fetchedData.length} 筆數據`, 'success');
+                updateStats();
+                updateResultsTable();
+                switchTab('results');
+            } else {
+                log(`\n⏹️ 抓取已停止，目前 ${fetchedData.length} 筆數據`, 'warn');
+            }
+            
+            isRunning = false;
+            document.getElementById('fetchBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        function stopFetch() {
+            isRunning = false;
+            log('\n⏹️ 用戶停止抓取', 'warn');
+        }
+        
+        function downloadCSV() {
+            const startDate = (document.getElementById('startDate').value || '').trim();
+            let endDate = (document.getElementById('endDate').value || '').trim();
+            const goodsIdFilterRaw = (document.getElementById('goodsIdFilter')?.value || '').trim();
+
+            if (startDate && !endDate) {
+                endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            }
+
+            let goodsIdSet = null;
+                        let remainingGoodsIdSet = null;
+            if (goodsIdFilterRaw) {
+                const ids = goodsIdFilterRaw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+                goodsIdSet = new Set(ids);
+                            remainingGoodsIdSet = new Set(goodsIdSet);
+            }
+
+            const filtered = fetchedData.filter(g => {
+                const t = String(g.first_sale_time || '');
+                if (!t) return false;
+                if (startDate && t < startDate) return false;
+                if (endDate && t > endDate) return false;
+
+                const sku = (g.sku || '').toString().trim();
+                if (!sku) return false;
+
+                const st = Number(g.stock ?? 0);
+                if (!(st > 1)) return false;
+
+                if (goodsIdSet) {
+                    const gid = String(g.goods_id || '');
+                    if (!goodsIdSet.has(gid)) return false;
+                }
+                return true;
+            });
+            
+            if (filtered.length === 0) {
+                alert('沒有數據可下載');
+                return;
+            }
+            
+            const headers = ['provider_name','brand_name','first_sale_time','goods_id','goods_name','code','goods_img','price','sku','color','size','imgs'];
+            const rows = filtered.map(item => [
+                item.provider_name,
+                item.brand_name,
+                item.first_sale_time,
+                item.goods_id,
+                item.goods_name,
+                item.code,
+                item.goods_img,
+                item.price,
+                item.sku,
+                item.color,
+                item.size,
+                item.imgs
+            ]);
+            
+            const csvContent = '\uFEFF' + [headers, ...rows].map(row => 
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            ).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `一手${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            
+            log('✓ CSV 文件已下載', 'success');
+        }
+        
+        function downloadJSON() {
+            const startDate = (document.getElementById('startDate').value || '').trim();
+            let endDate = (document.getElementById('endDate').value || '').trim();
+            const goodsIdFilterRaw = (document.getElementById('goodsIdFilter')?.value || '').trim();
+
+            if (startDate && !endDate) {
+                endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            }
+
+            let goodsIdSet = null;
+                        let remainingGoodsIdSet = null;
+            if (goodsIdFilterRaw) {
+                const ids = goodsIdFilterRaw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+                goodsIdSet = new Set(ids);
+                            remainingGoodsIdSet = new Set(goodsIdSet);
+            }
+
+            const filtered = fetchedData.filter(g => {
+                const t = String(g.first_sale_time || '');
+                if (!t) return false;
+                if (startDate && t < startDate) return false;
+                if (endDate && t > endDate) return false;
+
+                const sku = (g.sku || '').toString().trim();
+                if (!sku) return false;
+
+                const st = Number(g.stock ?? 0);
+                if (!(st > 1)) return false;
+
+                if (goodsIdSet) {
+                    const gid = String(g.goods_id || '');
+                    if (!goodsIdSet.has(gid)) return false;
+                }
+                return true;
+            });
+            
+            if (filtered.length === 0) {
+                alert('沒有數據可下載');
+                return;
+            }
+            
+            const json = JSON.stringify(filtered, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `一手${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            
+            log('✓ JSON 文件已下載', 'success');
+        }
+        
+        // 初始化：顯示當前代理模式
+        window.addEventListener('DOMContentLoaded', () => {
+            const proxyModeEl = document.getElementById('proxyMode');
+            if (!proxyModeEl) return;
+            
+            if (window.location.hostname.includes('netlify.app') || 
+                window.location.hostname.includes('netlify.com')) {
+                proxyModeEl.textContent = 'Netlify Functions（自動）';
+                proxyModeEl.style.color = '#28a745';
+            } else if (window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1') {
+                proxyModeEl.textContent = '本地開發模式';
+                proxyModeEl.style.color = '#ffc107';
+            } else {
+                proxyModeEl.textContent = '需要配置代理';
+                proxyModeEl.style.color = '#dc3545';
+            }
+        });
+    </script>
+</body>
+</html>
