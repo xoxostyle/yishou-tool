@@ -328,9 +328,9 @@
         
         <div class="content">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('config')">配置</button>
-                <button class="tab" onclick="switchTab('fetch')">抓取</button>
-                <button class="tab" onclick="switchTab('results')">結果</button>
+                <button class="tab active" id="tabbtn-config" onclick="switchTab('config')">配置</button>
+                <button class="tab" id="tabbtn-fetch" onclick="switchTab('fetch')">抓取</button>
+                <button class="tab" id="tabbtn-results" onclick="switchTab('results')">結果</button>
             </div>
             
             <div id="config-tab" class="tab-content active">
@@ -400,6 +400,15 @@
                     <div class="form-group">
                         <label>請求延遲 (毫秒)</label>
                         <input type="number" id="requestDelay" value="500" min="0" max="5000">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoDownloadCSV" checked>
+                            抓取完成後自動下載 CSV
+                        </label>
+                        <p style="font-size: 12px; color: #888; margin-top: 5px;">
+                            說明：瀏覽器可能會因安全性限制阻擋「非使用者操作」觸發的下載；若被阻擋，請允許此網站的自動下載。
+                        </p>
                     </div>
                 </div>
                 
@@ -488,9 +497,12 @@
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tabName + '-tab').classList.add('active');
+
+            const btn = document.getElementById('tabbtn-' + tabName);
+            if (btn) btn.classList.add('active');
+
+            const panel = document.getElementById(tabName + '-tab');
+            if (panel) panel.classList.add('active');
         }
         
         function log(message, type = 'info') {
@@ -577,7 +589,7 @@
                 if (!sku) return false;
 
                 const st = Number(g.stock ?? 0);
-                if (!(st > 1)) return false;
+                if (!(st >= 1)) return false;
 
                 if (goodsIdSet) {
                     const gid = String(g.goods_id || '');
@@ -825,7 +837,7 @@
                         
                         for (const item of items) {
                             const stockNum = Number(item.stock ?? item.sale_stock ?? item.num ?? 0);
-                            // 僅保留庫存 > 1 的 SKU
+                            // 僅保留庫存 >= 1 的 SKU
                             if (!(stockNum > 1)) continue;
 
                             variants.push({
@@ -967,7 +979,7 @@
                                     }
                                     log(`    商品 ${goodsId}: ${variants.length} 個SKU`, 'success');
                                 } else {
-                                    log(`    商品 ${goodsId}: 無 SKU、庫存 ≤ 1 或無法取得（已跳過）`, 'warn');
+                                    log(`    商品 ${goodsId}: 無 SKU、庫存 < 1 或無法取得（已跳過）`, 'warn');
                                 }
                                 
                                 await new Promise(resolve => setTimeout(resolve, delay));
@@ -1019,6 +1031,16 @@
                 updateStats();
                 updateResultsTable();
                 switchTab('results');
+            
+                // 抓取完成後自動下載 CSV（若瀏覽器阻擋，請允許此站點自動下載）
+                const autoDl = document.getElementById('autoDownloadCSV')?.checked;
+                if (autoDl) {
+                    try {
+                        downloadCSV();
+                    } catch (e) {
+                        log(`✗ 自動下載失敗：${e?.message || e}`, 'error');
+                    }
+                }
             } else {
                 log(`\n⏹️ 抓取已停止，目前 ${fetchedData.length} 筆數據`, 'warn');
             }
@@ -1058,7 +1080,7 @@
                 if (!sku) return false;
 
                 const st = Number(g.stock ?? 0);
-                if (!(st > 1)) return false;
+                if (!(st >= 1)) return false;
 
                 if (goodsIdSet) {
                     const gid = String(g.goods_id || '');
@@ -1126,7 +1148,7 @@
                 if (!sku) return false;
 
                 const st = Number(g.stock ?? 0);
-                if (!(st > 1)) return false;
+                if (!(st >= 1)) return false;
 
                 if (goodsIdSet) {
                     const gid = String(g.goods_id || '');
